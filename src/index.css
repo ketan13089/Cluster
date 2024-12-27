@@ -22,7 +22,7 @@ body {
 
 .container {
   display: flex;
-  width: 90vw;
+  width: 80vw;
   height: 90vh;
   border-radius: 12px;
   background: rgba(43, 69, 88, 0.753);

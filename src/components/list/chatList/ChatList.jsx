@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import './chatList.css'
+import AddUser from './addUser/AddUser';
 
 export default function ChatList() {
 
@@ -91,7 +92,7 @@ export default function ChatList() {
                 <p>Hello</p>
             </div>
         </div>
-
+        {addMode && <AddUser/>}
     </div>
   )
 }
