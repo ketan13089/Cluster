@@ -4,18 +4,23 @@
   box-sizing: border-box;
   font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
     "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
+
+  scrollbar-width: thin; 
+  scrollbar-color: #b7b7b7ac transparent;
 }
 
-body{
+
+
+body {
   background-image: url('/bg.jpg');
   display: flex;
-  align-items:center;
+  align-items: center;
   justify-content: center;
   height: 100vh;
   color: white;
 }
 
-.container{
+.container {
   display: flex;
   width: 90vw;
   height: 90vh;
@@ -23,4 +28,43 @@ body{
   background: rgba(43, 69, 88, 0.753);
   backdrop-filter: blur(15px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+
+::-webkit-scrollbar {
+  width: 4px; 
+  height: 4px; 
+  
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(83, 82, 82, 0.5); /* Semi-transparent */
+  border-radius: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(166, 86, 86, 0.8);
+}
+
+/* Hide scrollbar when not scrolling */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Show scrollbar only while scrolling */
+:hover::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+/* Remove scrollbar buttons/arrows */
+::-webkit-scrollbar-button {
+  display: none;
 }
