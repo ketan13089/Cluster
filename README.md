@@ -1,3 +1,2 @@
-# Cluster Chat app
-
+# Cluster
 
