@@ -68,3 +68,10 @@ body {
 ::-webkit-scrollbar-button {
   display: none;
 }
+
+.loading{
+  padding: 50px;
+  font-size: 36px;
+  border-radius: 10px;
+  background-color: rgba(92, 149, 241, 0.18);
+}

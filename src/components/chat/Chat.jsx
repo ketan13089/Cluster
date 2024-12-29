@@ -1,102 +1,166 @@
-import React, { useEffect, useRef, useState } from 'react'
-import "./chat.css"
-import EmojiPicker from "emoji-picker-react"
+import { useEffect, useRef, useState } from "react";
+import "./chat.css";
+import EmojiPicker from "emoji-picker-react";
+import {
+  arrayUnion,
+  doc,
+  getDoc,
+  onSnapshot,
+  updateDoc,
+} from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import { format } from "timeago.js";
+import useUserStore from "../../lib/userStore";
+import useChatStore from "../../lib/chatStore";
 
-export default function Chat() {
+const Chat = () => {
+  const [chat, setChat] = useState();
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
 
-    const [open,setOpen] = useState(false)
-    const [text,setText] = useState("")
+  const { currentUser } = useUserStore();
+  const { chatId, user, isCurrentUserBlocked, isReceiverBlocked } =
+    useChatStore();
 
-    const endRef = useRef(null);
+  const endRef = useRef(null);
 
-    useEffect(() =>{
-        endRef.current?.scrollIntoView({behavior:"smooth"});
-    },[])
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chat?.messages]);
 
-    const handleEmoji = e =>{
-        setText((prev) => prev + e.emoji)
-        setOpen(false)
+  useEffect(() => {
+    const unSub = onSnapshot(doc(db, "chats", chatId), (res) => {
+      setChat(res.data());
+    });
+
+    return () => {
+      unSub();
+    };
+  }, [chatId]);
+
+  const handleEmoji = (e) => {
+    setText((prev) => prev + e.emoji);
+    setOpen(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();  // Prevents the default behavior (new line)
+      handleSend();  // Calls the handleSend function to send the message
     }
-
-    
-
+  };
+  
+  const handleSend = async () => {
+    if (text.trim() === "") return; 
+  
+    try {
+      await updateDoc(doc(db, "chats", chatId), {
+        messages: arrayUnion({
+          senderId: currentUser.id,
+          text,
+          createdAt: new Date(),
+        }),
+      });
+  
+      const userIDs = [currentUser.id, user.id];
+      for (const id of userIDs) {
+        const userChatsRef = doc(db, "userchats", id);
+        const userChatsSnapshot = await getDoc(userChatsRef);
+  
+        if (userChatsSnapshot.exists()) {
+          const userChatsData = userChatsSnapshot.data();
+          const chatIndex = userChatsData.chats.findIndex(
+            (c) => c.chatId === chatId
+          );
+  
+          if (chatIndex !== -1) {
+            userChatsData.chats[chatIndex].lastMessage = text;
+            userChatsData.chats[chatIndex].isSeen = id === currentUser.id;
+            userChatsData.chats[chatIndex].updatedAt = Date.now();
+  
+            await updateDoc(userChatsRef, {
+              chats: userChatsData.chats,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error sending message:", err);
+    } finally {
+      setText("");  
+    }
+  };
+  
   return (
-    <div className='chat'>
-        <div className="top">
-            <div className="user">
-                <img src="./avatar.png" alt="" />
-                <div className="text">
-                    <span>Jane Doe</span>
-                    <p>Lorem ipsum dolor sit amet</p>
-                </div>
-            </div>
-            <div className="icons">
-                <img src="./phone.png" alt="" />
-                <img src="./video.png" alt="" />
-                <img src="./info.png" alt="" />
-            </div>
+    <div className="chat">
+      <div className="top">
+        <div className="user">
+          <img src={user?.avatar || "./avatar.png"} alt="" />
+          <div className="text">
+            <span>{user?.username}</span>
+            <p>Lorem ipsum dolor, sit amet.</p>
+          </div>
         </div>
-        <div className="center">
-            <div className="message">
-                <img src="./avatar.png" alt="" />
-                <div className="text">
-                    <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Maiores sunt iste repellat error quasi dolor similique molestiae itaque omnis repellendus.</p>
-                    <span>1 min ago</span>
-                </div>
-                
-            </div>
-            <div className="message own">
-            
-                <div className="text">
-                    <img src="https://images.pexels.com/photos/28976347/pexels-photo-28976347/free-photo-of-aerial-view-of-manhattan-s-iconic-skyline.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="" />
-                    <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Maiores sunt iste repellat error quasi dolor similique molestiae itaque omnis repellendus.</p>
-                    <span>1 min ago</span>
-                </div>
-                
-            </div>
-            <div className="message">
-                <img src="./avatar.png" alt="" />
-                <div className="text">
-                    <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Maiores sunt iste repellat error quasi dolor similique molestiae itaque omnis repellendus.</p>
-                    <span>1 min ago</span>
-                </div>
-                
-            </div>
-            <div className="message own">
-               
-                <div className="text">
-                    <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Maiores sunt iste repellat error quasi dolor similique molestiae itaque omnis repellendus.</p>
-                    <span>1 min ago</span>
-                </div>
-               
-            </div>
-            <div className="message">
-                <img src="./avatar.png" alt="" />
-                <div className="text">
-                    <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Maiores sunt iste repellat error quasi dolor similique molestiae itaque omnis repellendus.</p>
-                    <span>1 min ago</span>
-                </div>  
-            </div>
-            <div ref={endRef}></div>
+        <div className="icons">
+          <img src="./phone.png" alt="" />
+          <img src="./video.png" alt="" />
+          <img src="./info.png" alt="" />
         </div>
-        <div className="bottom">
-            <div className="icons">
-                <img src="./img.png" alt="" />
-                <img src="./camera.png" alt="" />
-                <img src="./mic.png" alt="" />
+      </div>
+      <div className="center">
+        {chat?.messages?.map((message) => (
+          <div
+            className={
+              message.senderId === currentUser?.id ? "message own" : "message"
+            }
+            key={message?.createdAt}
+          >
+            <div className="text">
+              <p>{message.text}</p>
+              <span>{format(message.createdAt.toDate())}</span>
             </div>
-            <input type="text" 
-            placeholder='Type a message...' 
-            value={text}
-            onChange={e=> setText(e.target.value)}/>
-            <div className="emoji">
-                <img src="./emoji.png" alt="" onClick={()=>setOpen(prev => !prev)} />
-                <div className="picker">
-                <EmojiPicker open={open} onEmojiClick={handleEmoji}/>
-                </div>
-            </div>
-            <button className='sendButton'>Send</button>
+          </div>
+        ))}
+        <div ref={endRef}></div>
+      </div>
+      <div className="bottom">
+        <div className="icons">
+          <img src="./img.png" alt="" />
+          <img src="./camera.png" alt="" />
+          <img src="./mic.png" alt="" />
         </div>
+        <input
+          type="text"
+          placeholder={
+            isCurrentUserBlocked || isReceiverBlocked
+              ? "You cannot send a message"
+              : "Type a message..."
+          }
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          disabled={isCurrentUserBlocked || isReceiverBlocked}
+        />
+        <div className="emoji">
+          <img
+            src="./emoji.png"
+            alt=""
+            onClick={() => setOpen((prev) => !prev)}
+          />
+          <div className="picker">
+            <EmojiPicker open={open} onEmojiClick={handleEmoji} />
+          </div>
+        </div>
+        <button
+          className="sendButton"
+          onClick={handleSend}
+          onKeyDown={handleKeyDown}
+          disabled={isCurrentUserBlocked || isReceiverBlocked}
+        >
+          Send
+        </button>
+      </div>
     </div>
-  )
-}
+  );
+};
+
+export default Chat;
